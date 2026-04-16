@@ -1,4 +1,4 @@
-import type { Goal, WeeklyPlan, DayPlan, StudyBlock, Subject } from '@/types';
+import type { Goal, WeeklyPlan, DayPlan, StudyBlock, Subject, LearningLevel } from '@/types';
 
 const TOPICS_BY_SUBJECT: Record<string, string[]> = {
   default: [
@@ -18,6 +18,56 @@ function getTopics(subjectName: string): string[] {
     subjectName.toLowerCase().includes(k)
   );
   return TOPICS_BY_SUBJECT[key ?? 'default'];
+}
+
+const DEFAULT_TOPICS_BY_LEVEL: Record<LearningLevel, string[]> = {
+  fundamental_1: [
+    'Leitura guiada dos conceitos principais',
+    'Exemplos simples resolvidos',
+    'Exercicios de fixacao',
+    'Revisao com resumo curto',
+    'Atividade pratica',
+    'Questoes de interpretacao',
+  ],
+  fundamental_2: [
+    'Fundamentos do assunto',
+    'Conceitos essenciais',
+    'Exercicios de aplicacao',
+    'Problemas contextualizados',
+    'Revisao dos pontos de erro',
+    'Questoes de prova escolar',
+  ],
+  medio: [
+    'Base teorica do tema',
+    'Formulas e definicoes importantes',
+    'Exercicios de nivel facil',
+    'Exercicios de nivel medio',
+    'Conexoes com outros temas',
+    'Simulado curto',
+  ],
+  enem_vestibular: [
+    'Conceitos cobrados com frequencia',
+    'Teoria aplicada a questoes',
+    'Exercicios de nivel facil',
+    'Exercicios de nivel medio',
+    'Questoes interdisciplinares',
+    'Simulado e analise de erros',
+  ],
+  superior: [
+    'Fundamentos e definicoes formais',
+    'Teoria e principais modelos',
+    'Exemplos resolvidos',
+    'Exercicios praticos',
+    'Casos especiais e excecoes',
+    'Aplicacoes e problemas avancados',
+  ],
+};
+
+function getSubjectTopics(subject: Subject, learningLevel: LearningLevel): string[] {
+  const fallbackTopics = DEFAULT_TOPICS_BY_LEVEL[learningLevel] ?? getTopics(subject.name);
+  return (subject.studyContents?.length ?? 0) > 0
+    ? subject.studyContents
+    : fallbackTopics;
 }
 
 function priorityMultiplier(priority: Subject['priority']): number {
@@ -63,7 +113,7 @@ export function generateWeeklyPlan(goal: Goal, replan = false): WeeklyPlan {
     goal.subjects.forEach(subject => {
       const fraction = priorityMultiplier(subject.priority) / totalWeightedHours;
       const subjectMinutes = Math.round(fraction * minutesAvailable * 0.7);
-      const topics = getTopics(subject.name);
+      const topics = getSubjectTopics(subject, goal.learningLevel);
       const topicIndex = (idx * 2) % topics.length;
 
       if (minutesUsed + subjectMinutes <= minutesAvailable) {
@@ -82,7 +132,7 @@ export function generateWeeklyPlan(goal: Goal, replan = false): WeeklyPlan {
 
     if (idx > 0 && minutesUsed < minutesAvailable) {
       const reviewSubject = goal.subjects[idx % goal.subjects.length];
-      const topics = getTopics(reviewSubject.name);
+      const topics = getSubjectTopics(reviewSubject, goal.learningLevel);
       const reviewMinutes = Math.min(30, minutesAvailable - minutesUsed);
 
       reviewBlocks.push({
@@ -99,7 +149,7 @@ export function generateWeeklyPlan(goal: Goal, replan = false): WeeklyPlan {
 
     if (replan && isPast) {
       goal.subjects.slice(0, 2).forEach(subject => {
-        const topics = getTopics(subject.name);
+        const topics = getSubjectTopics(subject, goal.learningLevel);
         pendingBlocks.push({
           id: generateBlockId(),
           subjectId: subject.id,

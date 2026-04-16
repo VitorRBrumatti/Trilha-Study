@@ -1,4 +1,4 @@
-import type { AppState, Goal, WeeklyPlan, CheckInRecord, View } from '@/types';
+import type { AppState, Goal, WeeklyPlan, CheckInRecord, View, LearningLevel } from '@/types';
 
 const STORAGE_KEY = 'trilha_state';
 
@@ -8,13 +8,33 @@ const defaultState: AppState = {
   checkIns: [],
   currentView: 'landing',
   hasCompletedOnboarding: false,
+  subscriptionPlan: 'free',
 };
+
+const DEFAULT_LEARNING_LEVEL: LearningLevel = 'enem_vestibular';
+
+function normalizeGoal(goal: Goal | null | undefined): Goal | null {
+  if (!goal) return null;
+  return {
+    ...goal,
+    learningLevel: goal.learningLevel ?? DEFAULT_LEARNING_LEVEL,
+    subjects: goal.subjects.map(subject => ({
+      ...subject,
+      studyContents: subject.studyContents ?? [],
+    })),
+  };
+}
 
 export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState;
-    return { ...defaultState, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<AppState>;
+    return {
+      ...defaultState,
+      ...parsed,
+      goal: normalizeGoal(parsed.goal),
+    };
   } catch {
     return defaultState;
   }

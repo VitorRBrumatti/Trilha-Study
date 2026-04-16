@@ -1,17 +1,20 @@
 export type EnergyLevel = 'low' | 'medium' | 'high';
 export type Priority = 'high' | 'medium' | 'low';
 export type View = 'landing' | 'onboarding' | 'dashboard' | 'daily' | 'replan' | 'report';
+export type LearningLevel = 'fundamental_1' | 'fundamental_2' | 'medio' | 'enem_vestibular' | 'superior';
 
 export interface Subject {
   id: string;
   name: string;
   priority: Priority;
   color: string;
+  studyContents: string[];
 }
 
 export interface Goal {
   examName: string;
   examDate: string;
+  learningLevel: LearningLevel;
   subjects: Subject[];
   weeklyHours: number;
   dailyAvailableHours: number;
@@ -62,4 +65,5 @@ export interface AppState {
   checkIns: CheckInRecord[];
   currentView: View;
   hasCompletedOnboarding: boolean;
+  subscriptionPlan: 'free' | 'monthly' | 'annual';
 }

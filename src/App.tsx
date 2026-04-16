@@ -13,14 +13,15 @@ import { ModeToggle } from '@/components/mode-toggle';
 const DEMO_GOAL: Goal = {
   examName: 'ENEM 2026',
   examDate: '2026-11-08',
+  learningLevel: 'enem_vestibular',
   subjects: [
-    { id: '1', name: 'Matematica', priority: 'high', color: 'oklch(0.42 0.13 152)' },
-    { id: '2', name: 'Portugues', priority: 'high', color: 'oklch(0.58 0.12 200)' },
-    { id: '3', name: 'Historia', priority: 'medium', color: 'oklch(0.72 0.15 80)' },
-    { id: '4', name: 'Ciencias da Natureza', priority: 'medium', color: 'oklch(0.65 0.18 30)' },
-    { id: '5', name: 'Ingles', priority: 'low', color: 'oklch(0.55 0.12 250)' },
+    { id: '1', name: 'Matematica', priority: 'high', color: 'oklch(0.42 0.13 152)', studyContents: ['Funcao afim', 'Funcao quadratica', 'Geometria plana'] },
+    { id: '2', name: 'Portugues', priority: 'high', color: 'oklch(0.58 0.12 200)', studyContents: ['Interpretacao de texto', 'Concordancia verbal', 'Redacao dissertativa'] },
+    { id: '3', name: 'Historia', priority: 'medium', color: 'oklch(0.72 0.15 80)', studyContents: [] },
+    { id: '4', name: 'Ciencias da Natureza', priority: 'medium', color: 'oklch(0.65 0.18 30)', studyContents: [] },
+    { id: '5', name: 'Ingles', priority: 'low', color: 'oklch(0.55 0.12 250)', studyContents: [] },
   ],
-  weeklyHours: 20,
+  weeklyHours: 21,
   dailyAvailableHours: 3.5,
   createdAt: new Date().toISOString(),
 };
@@ -106,6 +107,14 @@ export function App() {
     });
   }
 
+  function handleSubscribe(plan: AppState['subscriptionPlan']) {
+    setState(prev => {
+      const next = { ...prev, subscriptionPlan: plan };
+      saveState({ subscriptionPlan: plan });
+      return next;
+    });
+  }
+
   const consecutiveMissed = state.checkIns ? getConsecutiveMissedDays(state.checkIns) : 0;
   const todayPlan = state.weeklyPlan ? getTodayPlan(state.weeklyPlan) : null;
 
@@ -183,6 +192,8 @@ export function App() {
         plan={state.weeklyPlan}
         goal={state.goal}
         consecutiveMissedDays={consecutiveMissed}
+        subscriptionPlan={state.subscriptionPlan}
+        onSubscribe={handleSubscribe}
         onConfirm={handleReplanConfirm}
         onBack={() => navigate(state.hasCompletedOnboarding ? 'daily' : 'dashboard')}
       />

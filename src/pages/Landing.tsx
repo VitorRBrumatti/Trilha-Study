@@ -8,8 +8,9 @@ interface LandingProps {
 
 const benefits = [
   { icon: Target, text: 'Sabe o que estudar hoje, sem perder tempo planejando' },
+  { icon: CheckCircle2, text: 'Adapta o plano ao seu nivel de aprendizado' },
   { icon: RefreshCw, text: 'Revisoes distribuidas automaticamente pelo sistema' },
-  { icon: Zap, text: 'Replanejar a semana em um clique, sem culpa' },
+  { icon: Zap, text: 'Calcula sua semana a partir do seu tempo diario' },
   { icon: TrendingUp, text: 'Acompanha sua constancia, nao so horas estudadas' },
   { icon: CheckCircle2, text: 'Retomada inteligente quando voce atrasa o plano' },
 ];
@@ -32,7 +33,7 @@ export function Landing({ onStart }: LandingProps) {
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 max-w-3xl mx-auto w-full">
         <div className="w-full text-center space-y-8">
           <Badge variant="secondary" className="text-sm font-medium px-3 py-1">
-            Copiloto de execucao para concursos e vestibulares
+            Copiloto de execucao para qualquer nivel de estudo
           </Badge>
 
           <div className="space-y-4">
@@ -60,7 +61,7 @@ export function Landing({ onStart }: LandingProps) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8">
             {[
               { value: 'Hoje', label: 'O que estudar' },
-              { value: 'Automatico', label: 'Plano semanal' },
+              { value: 'Nivel', label: 'Plano adaptado' },
               { value: '1 clique', label: 'Para replanejar' },
             ].map((stat) => (
               <div key={stat.label} className="bg-card border border-border rounded-xl p-4 text-center">
@@ -92,11 +93,11 @@ export function Landing({ onStart }: LandingProps) {
 
         <div className="w-full mt-20 bg-primary rounded-2xl p-8 text-center space-y-4">
           <h2 className="text-2xl font-bold text-primary-foreground">
-            Nao e mais um planner.
+            Não é mais um planner.
           </h2>
           <p className="text-primary-foreground/80 max-w-md mx-auto leading-relaxed">
             Planners te pedem para planejar. A Trilha te diz o que fazer agora,
-            redistribui o que atrasou e mantém sua semana sob controle.
+            calcula sua semana pelo tempo diario e mantem sua rotina sob controle.
           </p>
           <Button
             size="lg"

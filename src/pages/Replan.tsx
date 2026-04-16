@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RotateCcw, CircleCheck as CheckCircle2, ArrowRight, Heart } from 'lucide-react';
+import { RotateCcw, CircleCheck as CheckCircle2, ArrowRight, Heart, Crown, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +10,8 @@ interface ReplanProps {
   plan: WeeklyPlan;
   goal: Goal;
   consecutiveMissedDays: number;
+  subscriptionPlan: 'free' | 'monthly' | 'annual';
+  onSubscribe: (plan: 'monthly' | 'annual') => void;
   onConfirm: (dropSubjectIds: string[]) => void;
   onBack: () => void;
 }
@@ -35,7 +37,15 @@ const STRATEGIES: { value: Strategy; label: string; desc: string; badge?: string
   },
 ];
 
-export function Replan({ plan, goal, consecutiveMissedDays, onConfirm, onBack }: ReplanProps) {
+export function Replan({
+  plan,
+  goal,
+  consecutiveMissedDays,
+  subscriptionPlan,
+  onSubscribe,
+  onConfirm,
+  onBack,
+}: ReplanProps) {
   const [strategy, setStrategy] = useState<Strategy>('redistribute');
   const [keepSubjects, setKeepSubjects] = useState<Set<string>>(
     new Set(goal.subjects.filter(s => s.priority !== 'low').map(s => s.id))
@@ -48,6 +58,12 @@ export function Replan({ plan, goal, consecutiveMissedDays, onConfirm, onBack }:
 
   const missedBlocks = missedDays.flatMap(d => d.studyBlocks).length;
   const remainingSlots = remainingDays.length;
+  const isPremium = subscriptionPlan !== 'free';
+  const monthlyPrice = 9.99;
+  const annualPrice = 99.99;
+  const monthlyAnnualCost = monthlyPrice * 12;
+  const annualSavings = Math.max(0, monthlyAnnualCost - annualPrice);
+  const annualDiscountPct = Math.round((annualSavings / monthlyAnnualCost) * 100);
 
   function toggleSubject(id: string) {
     setKeepSubjects(prev => {
@@ -75,6 +91,90 @@ export function Replan({ plan, goal, consecutiveMissedDays, onConfirm, onBack }:
         <div>
           <h2 className="text-2xl font-bold text-foreground">Trilha recalculada!</h2>
           <p className="text-muted-foreground mt-2">Seu plano foi ajustado. Vamos retomar.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="max-w-xl mx-auto px-4 pt-8 space-y-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Lock className="size-4 text-primary" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">Replanejamento Premium</h1>
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed pl-10">
+              O replanejamento inteligente esta disponivel nos planos premium.
+              Escolha uma assinatura para recalcular a semana quando imprevistos acontecerem.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            <button
+              type="button"
+              onClick={() => onSubscribe('monthly')}
+              className="w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Crown className="size-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Premium mensal</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Replaneje quando precisar, cobranca mensal.
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-lg font-bold text-foreground">R$ 9,99</div>
+                  <div className="text-xs text-muted-foreground">por mes</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSubscribe('annual')}
+              className="w-full rounded-xl border border-primary bg-primary/5 p-4 text-left transition-all hover:bg-primary/10 ring-1 ring-primary/20"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Crown className="size-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Premium anual</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {annualDiscountPct}% de desconto
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    R$ {annualSavings.toFixed(2).replace('.', ',')} de economia comparado ao mensal.
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-lg font-bold text-foreground">R$ 99,99</div>
+                  <div className="text-xs text-muted-foreground">por ano</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div className="bg-secondary/50 border border-secondary rounded-xl p-4 flex items-start gap-3">
+            <Heart className="size-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-secondary-foreground leading-relaxed">
+              O plano gratuito continua com a trilha inicial, estudos do dia e relatorios.
+              O premium libera o recalculo da semana.
+            </p>
+          </div>
+        </div>
+
+        <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t border-border p-4">
+          <div className="max-w-xl mx-auto">
+            <Button variant="ghost" onClick={onBack}>Voltar</Button>
+          </div>
         </div>
       </div>
     );

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Plus, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import type { Goal, Subject, Priority } from '@/types';
+import type { Goal, Subject, Priority, LearningLevel } from '@/types';
 
 interface OnboardingProps {
   onComplete: (goal: Goal) => void;
@@ -36,16 +37,38 @@ const QUICK_SUBJECTS = [
   'Quimica', 'Fisica', 'Ingles', 'Direito', 'Economia', 'Raciocinio Logico',
 ];
 
+const STUDY_DAYS_PER_WEEK = 6;
+
+const LEARNING_LEVEL_OPTIONS: { value: LearningLevel; label: string; desc: string }[] = [
+  { value: 'fundamental_1', label: 'Ensino Fundamental I', desc: 'Anos iniciais' },
+  { value: 'fundamental_2', label: 'Ensino Fundamental II', desc: 'Anos finais' },
+  { value: 'medio', label: 'Ensino Medio', desc: 'Provas escolares' },
+  { value: 'enem_vestibular', label: 'ENEM / Vestibulares', desc: 'Vestibulares conhecidos' },
+  { value: 'superior', label: 'Ensino Superior', desc: 'Faculdade e pos' },
+];
+
+const LEARNING_LEVEL_LABELS: Record<LearningLevel, string> = Object.fromEntries(
+  LEARNING_LEVEL_OPTIONS.map(option => [option.value, option.label])
+) as Record<LearningLevel, string>;
+
+function parseStudyContents(value: string): string[] {
+  return value
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
 export function Onboarding({ onComplete, onBack }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [examName, setExamName] = useState('');
   const [examDate, setExamDate] = useState('');
+  const [learningLevel, setLearningLevel] = useState<LearningLevel | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubject, setNewSubject] = useState('');
-  const [weeklyHours, setWeeklyHours] = useState(15);
   const [dailyHours, setDailyHours] = useState(3);
 
   const totalSteps = 3;
+  const weeklyHours = dailyHours * STUDY_DAYS_PER_WEEK;
 
   function addSubject(name: string) {
     if (!name.trim() || subjects.length >= 8) return;
@@ -56,6 +79,7 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
       name: name.trim(),
       priority: 'medium',
       color: COLOR_DOTS[subjects.length % COLOR_DOTS.length],
+      studyContents: [],
     };
     setSubjects(prev => [...prev, newS]);
     setNewSubject('');
@@ -69,10 +93,17 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
     setSubjects(prev => prev.map(s => s.id === id ? { ...s, priority } : s));
   }
 
+  function setStudyContents(id: string, value: string) {
+    setSubjects(prev => prev.map(s => (
+      s.id === id ? { ...s, studyContents: parseStudyContents(value) } : s
+    )));
+  }
+
   function handleComplete() {
     const goal: Goal = {
       examName,
       examDate,
+      learningLevel: learningLevel ?? 'enem_vestibular',
       subjects,
       weeklyHours,
       dailyAvailableHours: dailyHours,
@@ -81,9 +112,9 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
     onComplete(goal);
   }
 
-  const canProceedStep1 = examName.trim() && examDate;
+  const canProceedStep1 = examName.trim() && examDate && learningLevel;
   const canProceedStep2 = subjects.length >= 1;
-  const canProceedStep3 = weeklyHours >= 1;
+  const canProceedStep3 = dailyHours >= 1;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -135,6 +166,26 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
+              <div className="space-y-3">
+                <Label>Nivel de aprendizado</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {LEARNING_LEVEL_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setLearningLevel(option.value)}
+                      className={`text-left rounded-lg border px-4 py-3 transition-all ${
+                        learningLevel === option.value
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                          : 'border-border bg-card hover:bg-accent/30'
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold text-foreground">{option.label}</span>
+                      <span className="block text-xs text-muted-foreground mt-0.5">{option.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -176,25 +227,42 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
 
             <div className="space-y-2">
               {subjects.map(s => (
-                <div key={s.id} className="flex items-center gap-3 bg-card border border-border rounded-lg px-4 py-3">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
-                  <span className="flex-1 text-sm font-medium text-foreground">{s.name}</span>
-                  <div className="flex gap-1">
-                    {(['high', 'medium', 'low'] as Priority[]).map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setPriority(s.id, p)}
-                        className={`text-xs px-2 py-0.5 rounded border font-medium transition-colors ${
-                          s.priority === p ? PRIORITY_STYLES[p] : 'border-transparent text-muted-foreground hover:border-border'
-                        }`}
-                      >
-                        {PRIORITY_LABELS[p]}
-                      </button>
-                    ))}
+                <div key={s.id} className="bg-card border border-border rounded-lg px-4 py-3 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
+                    <span className="flex-1 text-sm font-medium text-foreground">{s.name}</span>
+                    <div className="flex gap-1">
+                      {(['high', 'medium', 'low'] as Priority[]).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setPriority(s.id, p)}
+                          className={`text-xs px-2 py-0.5 rounded border font-medium transition-colors ${
+                            s.priority === p ? PRIORITY_STYLES[p] : 'border-transparent text-muted-foreground hover:border-border'
+                          }`}
+                        >
+                          {PRIORITY_LABELS[p]}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => removeSubject(s.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
-                  <button onClick={() => removeSubject(s.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="space-y-1.5 pl-5">
+                    <Label htmlFor={`contents-${s.id}`} className="text-xs text-muted-foreground">
+                      Conteudos para estudar
+                    </Label>
+                    <Textarea
+                      id={`contents-${s.id}`}
+                      placeholder="Ex: Equacoes do 2 grau, funcao afim, geometria plana"
+                      defaultValue={s.studyContents.join('\n')}
+                      onBlur={e => setStudyContents(s.id, e.target.value)}
+                      className="min-h-20 resize-none text-sm"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Deixe em branco para usar conceitos gerais do nivel selecionado.
+                    </p>
+                  </div>
                 </div>
               ))}
               {subjects.length === 0 && (
@@ -216,24 +284,6 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>Horas disponíveis por semana</Label>
-                  <span className="text-2xl font-bold text-primary">{weeklyHours}h</span>
-                </div>
-                <Slider
-                  min={3}
-                  max={60}
-                  step={1}
-                  value={[weeklyHours]}
-                  onValueChange={([v]) => setWeeklyHours(v)}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>3h (mínimo)</span>
-                  <span>60h (maximo)</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
                   <Label>Horas por dia (media)</Label>
                   <span className="text-2xl font-bold text-primary">{dailyHours}h</span>
                 </div>
@@ -244,6 +294,19 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
                   value={[dailyHours]}
                   onValueChange={([v]) => setDailyHours(v)}
                 />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1h (minimo)</span>
+                  <span>10h (maximo)</span>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <p className="text-sm text-muted-foreground">
+                  O sistema calcula sua semana com base em {STUDY_DAYS_PER_WEEK} dias de estudo.
+                </p>
+                <p className="text-lg font-bold text-primary mt-1">
+                  {dailyHours}h/dia = {weeklyHours}h/semana
+                </p>
               </div>
             </div>
 
@@ -254,12 +317,22 @@ export function Onboarding({ onComplete, onBack }: OnboardingProps) {
                   <span className="text-muted-foreground">Prova:</span>
                   <span className="font-medium text-foreground">{examName}</span>
                 </div>
+                <div className="flex justify-between text-sm gap-4">
+                  <span className="text-muted-foreground">Nivel:</span>
+                  <span className="font-medium text-foreground text-right">
+                    {learningLevel ? LEARNING_LEVEL_LABELS[learningLevel] : '-'}
+                  </span>
+                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Matérias:</span>
                   <span className="font-medium text-foreground">{subjects.length} matérias</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Dedicacao:</span>
+                  <span className="text-muted-foreground">Dedicacao diaria:</span>
+                  <span className="font-medium text-foreground">{dailyHours}h/dia</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Dedicacao semanal:</span>
                   <span className="font-medium text-foreground">{weeklyHours}h/semana</span>
                 </div>
               </div>
